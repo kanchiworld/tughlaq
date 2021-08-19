@@ -1,0 +1,60 @@
+Copyright (c) 2009-2012 Bitcoin Developers
+Distributed under the MIT/X11 software license, see the accompanying file
+license.txt or http://www.opensource.org/licenses/mit-license.php.  This
+product includes software developed by the OpenSSL Project for use in the
+OpenSSL Toolkit (http://www.openssl.org/).  This product includes cryptographic
+software written by Eric Young (eay@cryptsoft.com) and UPnP software written by
+Thomas Bernard.
+
+
+Mac OS X tughlaqd build instructions
+Laszlo Hanyecz <solar@heliacal.net>
+Douglas Huff <dhuff@jrbobdobbs.org>
+
+
+See readme-qt.rst for instructions on building Tughlaq QT, the
+graphical user interface.
+
+Tested up to 10.13
+
+1.  Download and install xcode from the app store.
+
+2. run 'sudo xcode-select --install' to install the command line tools.
+
+3.  Download and install MacPorts from http://www.macports.org/
+
+3a. (for 10.7 Lion)
+    Edit /opt/local/etc/macports/macports.conf and uncomment "build_arch i386"
+
+4.  Install dependencies from MacPorts
+
+sudo port install db48@+no_java openssl miniupnpc boost@1.59.0_3+no_single+no_static+python27 curl
+
+5. In terminal do this
+
+	cd
+	vim .bash_profile
+	i
+
+6. Into this file paste this line or confirm it's there
+
+	export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
+
+7. Save file and quit by hitting escape and typing wq and then return
+	
+
+6.  Clone the github tree to get the source code:
+
+git clone https://github.com/tughlaq/tughlaq.git
+
+4.  Now you should be able to build tughlaqd:
+
+cd tughlaq/src
+make -f makefile.osx
+
+Run:
+  ./tughlaqd --help  # for a list of command-line options.
+Run
+  ./tughlaqd -daemon # to start the tughlaq daemon.
+Run
+  ./tughlaqd help # When the daemon is running, to get a list of RPC commands

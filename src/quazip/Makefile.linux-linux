@@ -1,0 +1,265 @@
+#############################################################################
+# Makefile for building: libquazip.a
+#############################################################################
+
+####### Compiler, tools and options
+
+TARGET_PLATFORM:=x86_64
+DEPSDIR=/extradisk/tughlaq/depends/$(TARGET_PLATFORM)-pc-linux-gnu/
+CC            = x86_64-linux-gnu-gcc
+CXX           = x86_64-linux-gnu-g++
+DEFINES       = -DQUAZIP_BUILD -DQUAZIP_STATIC -DQT_NO_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB
+CFLAGS        = -pipe -O2 -fPIC -Wall -W -D_REENTRANT $(DEFINES)
+CXXFLAGS      = -pipe -O2 -fPIC -Wall -W -D_REENTRANT $(DEFINES)
+INCPATH       = -I. -I $(DEPSDIR)/include -I $(DEPSDIR)/include/QtWidgets -I $(DEPSDIR)/include/QtGui -I $(DEPSDIR)/include/QtCore -I.moc -isystem /usr/include/libdrm
+DEL_FILE      = rm -f
+CHK_DIR_EXISTS= test -d
+MKDIR         = mkdir -p
+COPY          = cp -f
+COPY_FILE     = cp -f
+COPY_DIR      = cp -f -R
+INSTALL_FILE  = install -m 644 -p
+INSTALL_PROGRAM = install -m 755 -p
+INSTALL_DIR   = cp -f -R
+DEL_FILE      = rm -f
+SYMLINK       = ln -f -s
+DEL_DIR       = rmdir
+MOVE          = mv -f
+TAR           = tar -cf
+COMPRESS      = gzip -9f
+AR            = x86_64-linux-gnu-ar cqs
+RANLIB        = 
+SED           = sed
+STRIP         = x86_64-linux-gnu-strip
+MOC=$(DEPSDIR)/native/bin/moc
+
+
+####### Output directory
+
+OBJECTS_DIR   = .obj/
+
+####### Files
+
+SOURCES       = qioapi.cpp \
+		JlCompress.cpp \
+		quaadler32.cpp \
+		quacrc32.cpp \
+		quagzipfile.cpp \
+		quaziodevice.cpp \
+		quazip.cpp \
+		quazipdir.cpp \
+		quazipfile.cpp \
+		quazipfileinfo.cpp \
+		quazipnewinfo.cpp \
+		unzip.c \
+		zip.c .moc/moc_quagzipfile.cpp \
+		.moc/moc_quaziodevice.cpp \
+		.moc/moc_quazipfile.cpp
+
+OBJECTS       = .obj/qioapi.o \
+		.obj/JlCompress.o \
+		.obj/quaadler32.o \
+		.obj/quacrc32.o \
+		.obj/quagzipfile.o \
+		.obj/quaziodevice.o \
+		.obj/quazip.o \
+		.obj/quazipdir.o \
+		.obj/quazipfile.o \
+		.obj/quazipfileinfo.o \
+		.obj/quazipnewinfo.o \
+		.obj/unzip.o \
+		.obj/zip.o \
+		.obj/moc_quagzipfile.o \
+		.obj/moc_quaziodevice.o \
+		.obj/moc_quazipfile.o
+
+DESTDIR       = 
+TARGET        = libquazip.a
+
+
+first: all
+####### Build rules
+
+staticlib: $(TARGET)
+
+$(TARGET):  $(OBJECTS) $(OBJCOMP) 
+	-$(DEL_FILE) $(TARGET)
+	$(AR) $(DESTDIR)$(TARGET) $(OBJECTS)
+
+
+
+all: $(TARGET)
+
+clean: compiler_clean 
+	-$(DEL_FILE) $(OBJECTS)
+	-$(DEL_FILE) *~ core *.core
+
+
+####### Sub-libraries
+
+mocclean: compiler_moc_header_clean compiler_moc_source_clean
+
+mocables: compiler_moc_header_make_all compiler_moc_source_make_all
+
+check: first
+
+benchmark: first
+
+compiler_rcc_make_all:
+compiler_rcc_clean:
+compiler_moc_predefs_make_all: .moc/moc_predefs.h
+compiler_moc_predefs_clean:
+	-$(DEL_FILE) .moc/moc_predefs.h
+.moc/moc_predefs.h: /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
+	g++ -pipe -O2 -fPIC -Wall -W -dM -E -o .moc/moc_predefs.h /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
+
+compiler_moc_header_make_all: .moc/moc_quagzipfile.cpp .moc/moc_quaziodevice.cpp .moc/moc_quazipfile.cpp
+compiler_moc_header_clean:
+	-$(DEL_FILE) .moc/moc_quagzipfile.cpp .moc/moc_quaziodevice.cpp .moc/moc_quazipfile.cpp
+
+.moc/moc_quagzipfile.cpp: quazip_global.h \
+		quagzipfile.h \
+		.moc/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include .moc/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/kanchan/tughlaq-master/src/quazip -I/home/kanchan/tughlaq-master/src/quazip -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include quagzipfile.h -o .moc/moc_quagzipfile.cpp
+
+.moc/moc_quaziodevice.cpp: quazip_global.h \
+		quaziodevice.h \
+		.moc/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include .moc/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/kanchan/tughlaq-master/src/quazip -I/home/kanchan/tughlaq-master/src/quazip -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include quaziodevice.h -o .moc/moc_quaziodevice.cpp
+
+.moc/moc_quazipfile.cpp: quazip_global.h \
+		quazip.h \
+		zip.h \
+		ioapi.h \
+		unzip.h \
+		quazipfileinfo.h \
+		quazipnewinfo.h \
+		quazipfile.h \
+		.moc/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include .moc/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/kanchan/tughlaq-master/src/quazip -I/home/kanchan/tughlaq-master/src/quazip -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include quazipfile.h -o .moc/moc_quazipfile.cpp
+
+compiler_moc_source_make_all:
+compiler_moc_source_clean:
+compiler_uic_make_all:
+compiler_uic_clean:
+compiler_yacc_decl_make_all:
+compiler_yacc_decl_clean:
+compiler_yacc_impl_make_all:
+compiler_yacc_impl_clean:
+compiler_lex_make_all:
+compiler_lex_clean:
+compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean 
+
+####### Compile
+
+.obj/qioapi.o: qioapi.cpp ioapi.h \
+		quazip_global.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o .obj/qioapi.o qioapi.cpp
+
+.obj/JlCompress.o: JlCompress.cpp JlCompress.h \
+		quazip.h \
+		zip.h \
+		ioapi.h \
+		unzip.h \
+		quazip_global.h \
+		quazipfileinfo.h \
+		quazipfile.h \
+		quazipnewinfo.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o .obj/JlCompress.o JlCompress.cpp
+
+.obj/quaadler32.o: quaadler32.cpp quaadler32.h \
+		quachecksum32.h \
+		quazip_global.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o .obj/quaadler32.o quaadler32.cpp
+
+.obj/quacrc32.o: quacrc32.cpp quacrc32.h \
+		quachecksum32.h \
+		quazip_global.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o .obj/quacrc32.o quacrc32.cpp
+
+.obj/quagzipfile.o: quagzipfile.cpp quagzipfile.h \
+		quazip_global.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o .obj/quagzipfile.o quagzipfile.cpp
+
+.obj/quaziodevice.o: quaziodevice.cpp quaziodevice.h \
+		quazip_global.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o .obj/quaziodevice.o quaziodevice.cpp
+
+.obj/quazip.o: quazip.cpp quazip.h \
+		zip.h \
+		ioapi.h \
+		unzip.h \
+		quazip_global.h \
+		quazipfileinfo.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o .obj/quazip.o quazip.cpp
+
+.obj/quazipdir.o: quazipdir.cpp quazipdir.h \
+		quazip.h \
+		zip.h \
+		ioapi.h \
+		unzip.h \
+		quazip_global.h \
+		quazipfileinfo.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o .obj/quazipdir.o quazipdir.cpp
+
+.obj/quazipfile.o: quazipfile.cpp quazipfile.h \
+		quazip_global.h \
+		quazip.h \
+		zip.h \
+		ioapi.h \
+		unzip.h \
+		quazipfileinfo.h \
+		quazipnewinfo.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o .obj/quazipfile.o quazipfile.cpp
+
+.obj/quazipfileinfo.o: quazipfileinfo.cpp quazipfileinfo.h \
+		quazip_global.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o .obj/quazipfileinfo.o quazipfileinfo.cpp
+
+.obj/quazipnewinfo.o: quazipnewinfo.cpp quazipnewinfo.h \
+		quazip_global.h \
+		quazipfileinfo.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o .obj/quazipnewinfo.o quazipnewinfo.cpp
+
+.obj/unzip.o: unzip.c unzip.h \
+		ioapi.h \
+		crypt.h \
+		quazip_global.h
+	$(CC) -c $(CFLAGS) $(INCPATH) -o .obj/unzip.o unzip.c
+
+.obj/zip.o: zip.c zip.h \
+		ioapi.h \
+		crypt.h \
+		quazip_global.h
+	$(CC) -c $(CFLAGS) $(INCPATH) -o .obj/zip.o zip.c
+
+.obj/moc_quagzipfile.o: .moc/moc_quagzipfile.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o .obj/moc_quagzipfile.o .moc/moc_quagzipfile.cpp
+
+.obj/moc_quaziodevice.o: .moc/moc_quaziodevice.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o .obj/moc_quaziodevice.o .moc/moc_quaziodevice.cpp
+
+.obj/moc_quazipfile.o: .moc/moc_quazipfile.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o .obj/moc_quazipfile.o .moc/moc_quazipfile.cpp
+
+####### Install
+
+
+install_target: first FORCE
+	@test -d $(INSTALL_ROOT)/lib/ || mkdir -p $(INSTALL_ROOT)/lib/
+	-$(QINSTALL) $(TARGET) $(INSTALL_ROOT)/lib/$(TARGET)
+
+uninstall_target: FORCE
+	-$(DEL_FILE) $(INSTALL_ROOT)/lib/$(TARGET)
+	-$(DEL_DIR) $(INSTALL_ROOT)/lib/ 
+
+
+install: install_headers install_target  FORCE
+
+uninstall: uninstall_headers uninstall_target  FORCE
+
+FORCE:
+
