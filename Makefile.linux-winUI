@@ -1,0 +1,1417 @@
+#################################################################################################
+# Makefile for building: tughlaq-qt.exe (tughlaq GUI app for windows)
+# Gautam: 12.3.2020 Creating a manual makefile to create windows Qt build cross compiled on Linux
+#################################################################################################
+
+####### Compiler, tools and options
+
+TARGET_PLATFORM := x86_64
+DEPSDIR := depends/$(TARGET_PLATFORM)-w64-mingw32/
+CC:=$(TARGET_PLATFORM)-w64-mingw32-gcc
+CXX:=$(TARGET_PLATFORM)-w64-mingw32-g++
+RANLIB=$(TARGET_PLATFORM)-w64-mingw32-ranlib
+STRIP=$(TARGET_PLATFORM)-w64-mingw32-strip
+LINK          = $(CXX)
+MOC=$(DEPSDIR)/native/bin/moc
+DEL_FILE      = rm -f
+CHK_DIR_EXISTS= test -d
+MKDIR         = mkdir -p
+COPY          = cp -f
+COPY_FILE     = cp -f
+COPY_DIR      = cp -f -R
+INSTALL_FILE  = install -m 644 -p
+INSTALL_PROGRAM = install -m 755 -p
+INSTALL_DIR   = cp -f -R
+SYMLINK       = ln -f -s
+DEL_DIR       = rmdir
+MOVE          = mv -f
+TAR           = tar -cf
+COMPRESS      = gzip -9f
+
+DEFINES       = -DQT_GUI -DBOOST_THREAD_USE_LIB -DBOOST_SPIRIT_THREADSAFE -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -DQT_DISABLE_DEPRECATED_BEFORE=0 -DUSE_QRCODE -DUSE_UPNP=1 -DSTATICLIB -DMINIUPNP_STATICLIB -DUSE_IPV6=1 -DUSE_AVX -DQUAZIP_STATIC -DHAVE_BUILD_INFO -DBITCOIN_NEED_QT_PLUGINS -DQT_NO_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -D_MT -DWIN32 -D_WINDOWS  -DCURL_STATICLIB
+
+CFLAGS        = -pipe -O2 -D_REENTRANT -Wall -W -fPIC -msse2 -w -Wextra -Wno-ignored-qualifiers -Wformat -Wformat-security -Wno-unused-parameter $(DEFINES)
+
+CXXFLAGS      = -pipe -fstack-protector-all --param ssp-buffer-size=1 -O2 -D_REENTRANT -fdiagnostics-show-option -Wall -Wextra -Wno-ignored-qualifiers -Wformat -Wformat-security -Wno-unused-parameter -Wstack-protector -fPIC $(DEFINES)
+
+
+LDFLAGS        = -fstack-protector-all --param ssp-buffer-size=1 -Wl,-rpath,./libs -Wl,-O1 -static-libgcc -static-libstdc++ -static --static  -mwindows
+
+LDFLAGS += -L$(DEPSDIR)/lib  -L$(DEPSDIR)/plugins/platforms 
+
+QT_LIBS = -lQt5AccessibilitySupport -lQt5DeviceDiscoverySupport -lQt5FbSupport -lQt5ThemeSupport -lQt5EventDispatcherSupport -lQt5FontDatabaseSupport   -lQt5Widgets -lQt5Gui -lQt5DBus -lQt5Network  -lQt5Core -lqtlibpng  -lqtharfbuzz 
+
+QT_PLUGINS =-lqminimal -lqtlibpng  -lqtharfbuzz  -lqrencode -lqwindows -lQt5Core
+
+LIBS =  $(QT_PLUGINS) $(QT_LIBS) -lminiupnpc src/leveldb/libleveldb.a src/leveldb/libmemenv.a -L src/quazip/ -lquazip -lz  -lssl -lcrypto  -ldb_cxx -lboost_system-mt-s-x64 -lboost_filesystem-mt-s-x64 -lboost_program_options-mt-s-x64 -lboost_thread-mt-s-x64 
+LIBS += -limm32   -lversion -ldwmapi -luxtheme
+LIBS += -lssp -lcrypt32 -liphlpapi -lshlwapi -lmswsock -lws2_32 -ladvapi32 -lrpcrt4 -luuid -loleaut32 -lole32 -lcomctl32 -lshell32 -lwinmm -lwinspool -lcomdlg32 -lgdi32 -luser32 -lkernel32 -lmingwthrd
+
+INCPATH       = -Isrc -Isrc/json -Isrc/qt -Isrc/leveldb/include -Isrc/leveldb/helpers -Isrc/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -Ibuild 
+
+
+
+####### Output directory
+
+OBJECTS_DIR   = build/
+
+####### Files
+
+SOURCES       = src/txdb-leveldb.cpp \
+		src/qt/bitcoin.cpp \
+		src/qt/bitcoingui.cpp \
+		src/qt/transactiontablemodel.cpp \
+		src/qt/addresstablemodel.cpp \
+		src/qt/optionsdialog.cpp \
+		src/qt/sendcoinsdialog.cpp \
+		src/qt/coincontroldialog.cpp \
+		src/qt/coincontroltreewidget.cpp \
+		src/qt/addressbookpage.cpp \
+		src/qt/signverifymessagedialog.cpp \
+		src/qt/aboutdialog.cpp \
+		src/qt/editaddressdialog.cpp \
+		src/qt/bitcoinaddressvalidator.cpp \
+		src/alert.cpp \
+		src/version.cpp \
+		src/sync.cpp \
+		src/util.cpp \
+		src/netbase.cpp \
+		src/key.cpp \
+		src/script.cpp \
+		src/main.cpp \
+		src/miner.cpp \
+		src/init.cpp \
+		src/net.cpp \
+		src/node.cpp \
+		src/irc.cpp \
+		src/checkpoints.cpp \
+		src/addrman.cpp \
+		src/db.cpp \
+		src/walletdb.cpp \
+		src/mempool.cpp \
+		src/block.cpp \
+		src/transaction.cpp \
+		src/qt/clientmodel.cpp \
+		src/qt/guiutil.cpp \
+		src/qt/transactionrecord.cpp \
+		src/qt/optionsmodel.cpp \
+		src/qt/monitoreddatamapper.cpp \
+		src/qt/transactiondesc.cpp \
+		src/qt/transactiondescdialog.cpp \
+		src/qt/bitcoinstrings.cpp \
+		src/qt/bitcoinamountfield.cpp \
+		src/wallet.cpp \
+		src/keystore.cpp \
+		src/qt/transactionfilterproxy.cpp \
+		src/qt/transactionview.cpp \
+		src/qt/transactionspage.cpp \
+		src/qt/walletmodel.cpp \
+		src/bitcoinrpc.cpp \
+		src/rpcdump.cpp \
+		src/rpcnet.cpp \
+		src/rpcmining.cpp \
+		src/rpcwallet.cpp \
+		src/rpcblockchain.cpp \
+		src/rpcrawtransaction.cpp \
+		src/qt/overviewpage.cpp \
+		src/qt/csvmodelwriter.cpp \
+		src/crypter.cpp \
+		src/qt/sendcoinsentry.cpp \
+		src/qt/qvalidatedlineedit.cpp \
+		src/qt/bitcoinunits.cpp \
+		src/qt/qvaluecombobox.cpp \
+		src/qt/askpassphrasedialog.cpp \
+		src/qt/askpassphrasepage.cpp \
+		src/protocol.cpp \
+		src/qt/notificator.cpp \
+		src/qt/qtipcserver.cpp \
+		src/qt/rpcconsole.cpp \
+		src/qt/downloader.cpp \
+		src/qt/updatedialog.cpp \
+		src/qt/rescandialog.cpp \
+		src/qt/autosaver.cpp \
+		src/qt/forumspage.cpp \
+		src/noui.cpp \
+		src/qt/postdialog.cpp \
+		src/qt/whatsnewdialog.cpp \
+		src/scrypt.cpp \
+		src/scrypt-x64.S \
+		src/scrypt-x86.S \
+		src/scrypt-arm.S \
+		src/sha2-x64.S \
+		src/sha2-x86.S \
+		src/sha2-arm.S \
+		src/qt/qrcodedialog.cpp qrc_bitcoin.cpp \
+		build/moc_bitcoingui.cpp \
+		build/moc_transactiontablemodel.cpp \
+		build/moc_addresstablemodel.cpp \
+		build/moc_optionsdialog.cpp \
+		build/moc_coincontroldialog.cpp \
+		build/moc_coincontroltreewidget.cpp \
+		build/moc_sendcoinsdialog.cpp \
+		build/moc_addressbookpage.cpp \
+		build/moc_signverifymessagedialog.cpp \
+		build/moc_aboutdialog.cpp \
+		build/moc_editaddressdialog.cpp \
+		build/moc_bitcoinaddressvalidator.cpp \
+		build/moc_clientmodel.cpp \
+		build/moc_guiutil.cpp \
+		build/moc_optionsmodel.cpp \
+		build/moc_monitoreddatamapper.cpp \
+		build/moc_transactiondesc.cpp \
+		build/moc_transactiondescdialog.cpp \
+		build/moc_bitcoinamountfield.cpp \
+		build/moc_transactionfilterproxy.cpp \
+		build/moc_transactionview.cpp \
+		build/moc_transactionspage.cpp \
+		build/moc_walletmodel.cpp \
+		build/moc_overviewpage.cpp \
+		build/moc_csvmodelwriter.cpp \
+		build/moc_sendcoinsentry.cpp \
+		build/moc_qvalidatedlineedit.cpp \
+		build/moc_qvaluecombobox.cpp \
+		build/moc_askpassphrasedialog.cpp \
+		build/moc_askpassphrasepage.cpp \
+		build/moc_forumspage.cpp \
+		build/moc_notificator.cpp \
+		build/moc_rpcconsole.cpp \
+		build/moc_downloader.cpp \
+		build/moc_updatedialog.cpp \
+		build/moc_autosaver.cpp \
+		build/moc_rescandialog.cpp \
+		build/moc_postdialog.cpp \
+		build/moc_whatsnewdialog.cpp \
+		build/moc_qrcodedialog.cpp
+
+OBJECTS       = build/txdb-leveldb.o \
+		build/bitcoin.o \
+		build/bitcoingui.o \
+		build/transactiontablemodel.o \
+		build/addresstablemodel.o \
+		build/optionsdialog.o \
+		build/sendcoinsdialog.o \
+		build/coincontroldialog.o \
+		build/coincontroltreewidget.o \
+		build/addressbookpage.o \
+		build/signverifymessagedialog.o \
+		build/aboutdialog.o \
+		build/editaddressdialog.o \
+		build/bitcoinaddressvalidator.o \
+		build/alert.o \
+		build/version.o \
+		build/sync.o \
+		build/util.o \
+		build/netbase.o \
+		build/key.o \
+		build/script.o \
+		build/main.o \
+		build/miner.o \
+		build/init.o \
+		build/net.o \
+		build/node.o \
+		build/irc.o \
+		build/checkpoints.o \
+		build/addrman.o \
+		build/db.o \
+		build/walletdb.o \
+		build/mempool.o \
+		build/block.o \
+		build/transaction.o \
+		build/clientmodel.o \
+		build/guiutil.o \
+		build/transactionrecord.o \
+		build/optionsmodel.o \
+		build/monitoreddatamapper.o \
+		build/transactiondesc.o \
+		build/transactiondescdialog.o \
+		build/bitcoinstrings.o \
+		build/bitcoinamountfield.o \
+		build/wallet.o \
+		build/keystore.o \
+		build/transactionfilterproxy.o \
+		build/transactionview.o \
+		build/transactionspage.o \
+		build/walletmodel.o \
+		build/bitcoinrpc.o \
+		build/rpcdump.o \
+		build/rpcnet.o \
+		build/rpcmining.o \
+		build/rpcwallet.o \
+		build/rpcblockchain.o \
+		build/rpcrawtransaction.o \
+		build/overviewpage.o \
+		build/csvmodelwriter.o \
+		build/crypter.o \
+		build/sendcoinsentry.o \
+		build/qvalidatedlineedit.o \
+		build/bitcoinunits.o \
+		build/qvaluecombobox.o \
+		build/askpassphrasedialog.o \
+		build/askpassphrasepage.o \
+		build/protocol.o \
+		build/notificator.o \
+		build/qtipcserver.o \
+		build/rpcconsole.o \
+		build/downloader.o \
+		build/updatedialog.o \
+		build/rescandialog.o \
+		build/autosaver.o \
+		build/forumspage.o \
+		build/noui.o \
+		build/postdialog.o \
+		build/whatsnewdialog.o \
+		build/scrypt.o \
+		build/scrypt-x64.o \
+		build/scrypt-x86.o \
+		build/scrypt-arm.o \
+		build/sha2-x64.o \
+		build/sha2-x86.o \
+		build/sha2-arm.o \
+		build/qrcodedialog.o \
+		build/qrc_bitcoin.o \
+		build/moc_bitcoingui.o \
+		build/moc_transactiontablemodel.o \
+		build/moc_addresstablemodel.o \
+		build/moc_optionsdialog.o \
+		build/moc_coincontroldialog.o \
+		build/moc_coincontroltreewidget.o \
+		build/moc_sendcoinsdialog.o \
+		build/moc_addressbookpage.o \
+		build/moc_signverifymessagedialog.o \
+		build/moc_aboutdialog.o \
+		build/moc_editaddressdialog.o \
+		build/moc_bitcoinaddressvalidator.o \
+		build/moc_clientmodel.o \
+		build/moc_guiutil.o \
+		build/moc_optionsmodel.o \
+		build/moc_monitoreddatamapper.o \
+		build/moc_transactiondesc.o \
+		build/moc_transactiondescdialog.o \
+		build/moc_bitcoinamountfield.o \
+		build/moc_transactionfilterproxy.o \
+		build/moc_transactionview.o \
+		build/moc_transactionspage.o \
+		build/moc_walletmodel.o \
+		build/moc_overviewpage.o \
+		build/moc_csvmodelwriter.o \
+		build/moc_sendcoinsentry.o \
+		build/moc_qvalidatedlineedit.o \
+		build/moc_qvaluecombobox.o \
+		build/moc_askpassphrasedialog.o \
+		build/moc_askpassphrasepage.o \
+		build/moc_forumspage.o \
+		build/moc_notificator.o \
+		build/moc_rpcconsole.o \
+		build/moc_downloader.o \
+		build/moc_updatedialog.o \
+		build/moc_autosaver.o \
+		build/moc_rescandialog.o \
+		build/moc_postdialog.o \
+		build/moc_whatsnewdialog.o \
+		build/moc_qrcodedialog.o
+
+
+TARGET        = tughlaq-qt.exe
+
+
+first: all
+####### Build rules
+
+$(TARGET): src/leveldb/libleveldb.a \
+	src/quazip/libquazip.a \
+	build/build.h build/ui_coincontroldialog.h \
+	build/ui_sendcoinsdialog.h \
+	build/ui_forumspage.h \
+	build/ui_addressbookpage.h \
+	build/ui_signverifymessagedialog.h \
+	build/ui_aboutdialog.h \
+	build/ui_editaddressdialog.h \
+	build/ui_transactiondescdialog.h \
+	build/ui_overviewpage.h \
+	build/ui_sendcoinsentry.h \
+	build/ui_askpassphrasedialog.h \
+	build/ui_askpassphrasepage.h \
+	build/ui_rpcconsole.h \
+	build/ui_optionsdialog.h \
+	build/ui_downloader.h \
+	build/ui_updatedialog.h \
+	build/ui_rescandialog.h \
+	build/ui_transactionspage.h \
+	build/ui_postdialog.h \
+	build/ui_whatsnewdialog.h \
+	build/ui_qrcodedialog.h \
+	$(OBJECTS)  \
+	mocables \
+	compiler_uic_make_all \
+	compiler_rcc_make_all 
+	$(LINK) $(LDFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
+	#compiler_TSQM_make_all #Gautam
+
+
+all: $(TARGET)
+
+clean: compiler_clean 
+	-$(DEL_FILE) $(OBJECTS)
+	-$(DEL_FILE) src/leveldb/libleveldb.a; cd src/leveldb ; $(MAKE) clean
+	-$(DEL_FILE) src/quazip/libquazip.a; cd src/quazip; $(MAKE) -f Makefile.linux-mingw clean
+	-$(DEL_FILE) *~ core *.core
+
+
+distclean: clean 
+	-$(DEL_FILE) $(TARGET) 
+	-$(DEL_FILE) .qmake.stash
+
+
+####### Sub-libraries
+
+src/leveldb/libleveldb.a: FORCE
+	cd src/leveldb && CC=$(CC) CXX=$(CXX) TARGET_OS=OS_WINDOWS_CROSSCOMPILE $(MAKE) OPT="-pipe -fstack-protector-all --param ssp-buffer-size=1 -O2" libleveldb.a libmemenv.a
+
+src/quazip/libquazip.a: FORCE
+	cd src/quazip && $(MAKE) -f Makefile.linux-mingw
+
+build/build.h: FORCE
+	/bin/sh share/genbuild.sh build/build.h
+
+mocclean: compiler_moc_header_clean compiler_moc_source_clean
+
+mocables: compiler_moc_header_make_all compiler_moc_source_make_all
+
+check: first
+
+benchmark: first
+
+compiler_TSQM_make_all: src/qt/locale/bitcoin_af_ZA.qm src/qt/locale/bitcoin_ar.qm src/qt/locale/bitcoin_bg.qm src/qt/locale/bitcoin_bs.qm src/qt/locale/bitcoin_ca.qm src/qt/locale/bitcoin_ca_ES.qm src/qt/locale/bitcoin_cs.qm src/qt/locale/bitcoin_cy.qm src/qt/locale/bitcoin_da.qm src/qt/locale/bitcoin_de.qm src/qt/locale/bitcoin_el_GR.qm src/qt/locale/bitcoin_en.qm src/qt/locale/bitcoin_eo.qm src/qt/locale/bitcoin_es.qm src/qt/locale/bitcoin_es_CL.qm src/qt/locale/bitcoin_et.qm src/qt/locale/bitcoin_eu_ES.qm src/qt/locale/bitcoin_fa.qm src/qt/locale/bitcoin_fa_IR.qm src/qt/locale/bitcoin_fi.qm src/qt/locale/bitcoin_fr.qm src/qt/locale/bitcoin_fr_CA.qm src/qt/locale/bitcoin_gu_IN.qm src/qt/locale/bitcoin_he.qm src/qt/locale/bitcoin_hi_IN.qm src/qt/locale/bitcoin_hr.qm src/qt/locale/bitcoin_hu.qm src/qt/locale/bitcoin_it.qm src/qt/locale/bitcoin_ja.qm src/qt/locale/bitcoin_la.qm src/qt/locale/bitcoin_lt.qm src/qt/locale/bitcoin_lv_LV.qm src/qt/locale/bitcoin_nb.qm src/qt/locale/bitcoin_nl.qm src/qt/locale/bitcoin_pl.qm src/qt/locale/bitcoin_pt_BR.qm src/qt/locale/bitcoin_pt_PT.qm src/qt/locale/bitcoin_ro_RO.qm src/qt/locale/bitcoin_ru.qm src/qt/locale/bitcoin_sk.qm src/qt/locale/bitcoin_sr.qm src/qt/locale/bitcoin_sv.qm src/qt/locale/bitcoin_th_TH.qm src/qt/locale/bitcoin_tr.qm src/qt/locale/bitcoin_uk.qm src/qt/locale/bitcoin_zh_CN.qm src/qt/locale/bitcoin_zh_TW.qm
+
+compiler_TSQM_clean:
+	-$(DEL_FILE) src/qt/locale/bitcoin_af_ZA.qm src/qt/locale/bitcoin_ar.qm src/qt/locale/bitcoin_bg.qm src/qt/locale/bitcoin_bs.qm src/qt/locale/bitcoin_ca.qm src/qt/locale/bitcoin_ca_ES.qm src/qt/locale/bitcoin_cs.qm src/qt/locale/bitcoin_cy.qm src/qt/locale/bitcoin_da.qm src/qt/locale/bitcoin_de.qm src/qt/locale/bitcoin_el_GR.qm src/qt/locale/bitcoin_en.qm src/qt/locale/bitcoin_eo.qm src/qt/locale/bitcoin_es.qm src/qt/locale/bitcoin_es_CL.qm src/qt/locale/bitcoin_et.qm src/qt/locale/bitcoin_eu_ES.qm src/qt/locale/bitcoin_fa.qm src/qt/locale/bitcoin_fa_IR.qm src/qt/locale/bitcoin_fi.qm src/qt/locale/bitcoin_fr.qm src/qt/locale/bitcoin_fr_CA.qm src/qt/locale/bitcoin_gu_IN.qm src/qt/locale/bitcoin_he.qm src/qt/locale/bitcoin_hi_IN.qm src/qt/locale/bitcoin_hr.qm src/qt/locale/bitcoin_hu.qm src/qt/locale/bitcoin_it.qm src/qt/locale/bitcoin_ja.qm src/qt/locale/bitcoin_la.qm src/qt/locale/bitcoin_lt.qm src/qt/locale/bitcoin_lv_LV.qm src/qt/locale/bitcoin_nb.qm src/qt/locale/bitcoin_nl.qm src/qt/locale/bitcoin_pl.qm src/qt/locale/bitcoin_pt_BR.qm src/qt/locale/bitcoin_pt_PT.qm src/qt/locale/bitcoin_ro_RO.qm src/qt/locale/bitcoin_ru.qm src/qt/locale/bitcoin_sk.qm src/qt/locale/bitcoin_sr.qm src/qt/locale/bitcoin_sv.qm src/qt/locale/bitcoin_th_TH.qm src/qt/locale/bitcoin_tr.qm src/qt/locale/bitcoin_uk.qm src/qt/locale/bitcoin_zh_CN.qm src/qt/locale/bitcoin_zh_TW.qm
+
+src/qt/locale/bitcoin_af_ZA.qm: src/qt/locale/bitcoin_af_ZA.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_af_ZA.ts -qm src/qt/locale/bitcoin_af_ZA.qm
+
+src/qt/locale/bitcoin_ar.qm: src/qt/locale/bitcoin_ar.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_ar.ts -qm src/qt/locale/bitcoin_ar.qm
+
+src/qt/locale/bitcoin_bg.qm: src/qt/locale/bitcoin_bg.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_bg.ts -qm src/qt/locale/bitcoin_bg.qm
+
+src/qt/locale/bitcoin_bs.qm: src/qt/locale/bitcoin_bs.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_bs.ts -qm src/qt/locale/bitcoin_bs.qm
+
+src/qt/locale/bitcoin_ca.qm: src/qt/locale/bitcoin_ca.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_ca.ts -qm src/qt/locale/bitcoin_ca.qm
+
+src/qt/locale/bitcoin_ca_ES.qm: src/qt/locale/bitcoin_ca_ES.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_ca_ES.ts -qm src/qt/locale/bitcoin_ca_ES.qm
+
+src/qt/locale/bitcoin_cs.qm: src/qt/locale/bitcoin_cs.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_cs.ts -qm src/qt/locale/bitcoin_cs.qm
+
+src/qt/locale/bitcoin_cy.qm: src/qt/locale/bitcoin_cy.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_cy.ts -qm src/qt/locale/bitcoin_cy.qm
+
+src/qt/locale/bitcoin_da.qm: src/qt/locale/bitcoin_da.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_da.ts -qm src/qt/locale/bitcoin_da.qm
+
+src/qt/locale/bitcoin_de.qm: src/qt/locale/bitcoin_de.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_de.ts -qm src/qt/locale/bitcoin_de.qm
+
+src/qt/locale/bitcoin_el_GR.qm: src/qt/locale/bitcoin_el_GR.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_el_GR.ts -qm src/qt/locale/bitcoin_el_GR.qm
+
+src/qt/locale/bitcoin_en.qm: src/qt/locale/bitcoin_en.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_en.ts -qm src/qt/locale/bitcoin_en.qm
+
+src/qt/locale/bitcoin_eo.qm: src/qt/locale/bitcoin_eo.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_eo.ts -qm src/qt/locale/bitcoin_eo.qm
+
+src/qt/locale/bitcoin_es.qm: src/qt/locale/bitcoin_es.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_es.ts -qm src/qt/locale/bitcoin_es.qm
+
+src/qt/locale/bitcoin_es_CL.qm: src/qt/locale/bitcoin_es_CL.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_es_CL.ts -qm src/qt/locale/bitcoin_es_CL.qm
+
+src/qt/locale/bitcoin_et.qm: src/qt/locale/bitcoin_et.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_et.ts -qm src/qt/locale/bitcoin_et.qm
+
+src/qt/locale/bitcoin_eu_ES.qm: src/qt/locale/bitcoin_eu_ES.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_eu_ES.ts -qm src/qt/locale/bitcoin_eu_ES.qm
+
+src/qt/locale/bitcoin_fa.qm: src/qt/locale/bitcoin_fa.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_fa.ts -qm src/qt/locale/bitcoin_fa.qm
+
+src/qt/locale/bitcoin_fa_IR.qm: src/qt/locale/bitcoin_fa_IR.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_fa_IR.ts -qm src/qt/locale/bitcoin_fa_IR.qm
+
+src/qt/locale/bitcoin_fi.qm: src/qt/locale/bitcoin_fi.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_fi.ts -qm src/qt/locale/bitcoin_fi.qm
+
+src/qt/locale/bitcoin_fr.qm: src/qt/locale/bitcoin_fr.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_fr.ts -qm src/qt/locale/bitcoin_fr.qm
+
+src/qt/locale/bitcoin_fr_CA.qm: src/qt/locale/bitcoin_fr_CA.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_fr_CA.ts -qm src/qt/locale/bitcoin_fr_CA.qm
+
+src/qt/locale/bitcoin_gu_IN.qm: src/qt/locale/bitcoin_gu_IN.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_gu_IN.ts -qm src/qt/locale/bitcoin_gu_IN.qm
+
+src/qt/locale/bitcoin_he.qm: src/qt/locale/bitcoin_he.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_he.ts -qm src/qt/locale/bitcoin_he.qm
+
+src/qt/locale/bitcoin_hi_IN.qm: src/qt/locale/bitcoin_hi_IN.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_hi_IN.ts -qm src/qt/locale/bitcoin_hi_IN.qm
+
+src/qt/locale/bitcoin_hr.qm: src/qt/locale/bitcoin_hr.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_hr.ts -qm src/qt/locale/bitcoin_hr.qm
+
+src/qt/locale/bitcoin_hu.qm: src/qt/locale/bitcoin_hu.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_hu.ts -qm src/qt/locale/bitcoin_hu.qm
+
+src/qt/locale/bitcoin_it.qm: src/qt/locale/bitcoin_it.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_it.ts -qm src/qt/locale/bitcoin_it.qm
+
+src/qt/locale/bitcoin_ja.qm: src/qt/locale/bitcoin_ja.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_ja.ts -qm src/qt/locale/bitcoin_ja.qm
+
+src/qt/locale/bitcoin_la.qm: src/qt/locale/bitcoin_la.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_la.ts -qm src/qt/locale/bitcoin_la.qm
+
+src/qt/locale/bitcoin_lt.qm: src/qt/locale/bitcoin_lt.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_lt.ts -qm src/qt/locale/bitcoin_lt.qm
+
+src/qt/locale/bitcoin_lv_LV.qm: src/qt/locale/bitcoin_lv_LV.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_lv_LV.ts -qm src/qt/locale/bitcoin_lv_LV.qm
+
+src/qt/locale/bitcoin_nb.qm: src/qt/locale/bitcoin_nb.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_nb.ts -qm src/qt/locale/bitcoin_nb.qm
+
+src/qt/locale/bitcoin_nl.qm: src/qt/locale/bitcoin_nl.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_nl.ts -qm src/qt/locale/bitcoin_nl.qm
+
+src/qt/locale/bitcoin_pl.qm: src/qt/locale/bitcoin_pl.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_pl.ts -qm src/qt/locale/bitcoin_pl.qm
+
+src/qt/locale/bitcoin_pt_BR.qm: src/qt/locale/bitcoin_pt_BR.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_pt_BR.ts -qm src/qt/locale/bitcoin_pt_BR.qm
+
+src/qt/locale/bitcoin_pt_PT.qm: src/qt/locale/bitcoin_pt_PT.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_pt_PT.ts -qm src/qt/locale/bitcoin_pt_PT.qm
+
+src/qt/locale/bitcoin_ro_RO.qm: src/qt/locale/bitcoin_ro_RO.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_ro_RO.ts -qm src/qt/locale/bitcoin_ro_RO.qm
+
+src/qt/locale/bitcoin_ru.qm: src/qt/locale/bitcoin_ru.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_ru.ts -qm src/qt/locale/bitcoin_ru.qm
+
+src/qt/locale/bitcoin_sk.qm: src/qt/locale/bitcoin_sk.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_sk.ts -qm src/qt/locale/bitcoin_sk.qm
+
+src/qt/locale/bitcoin_sr.qm: src/qt/locale/bitcoin_sr.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_sr.ts -qm src/qt/locale/bitcoin_sr.qm
+
+src/qt/locale/bitcoin_sv.qm: src/qt/locale/bitcoin_sv.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_sv.ts -qm src/qt/locale/bitcoin_sv.qm
+
+src/qt/locale/bitcoin_th_TH.qm: src/qt/locale/bitcoin_th_TH.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_th_TH.ts -qm src/qt/locale/bitcoin_th_TH.qm
+
+src/qt/locale/bitcoin_tr.qm: src/qt/locale/bitcoin_tr.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_tr.ts -qm src/qt/locale/bitcoin_tr.qm
+
+src/qt/locale/bitcoin_uk.qm: src/qt/locale/bitcoin_uk.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_uk.ts -qm src/qt/locale/bitcoin_uk.qm
+
+src/qt/locale/bitcoin_zh_CN.qm: src/qt/locale/bitcoin_zh_CN.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_zh_CN.ts -qm src/qt/locale/bitcoin_zh_CN.qm
+
+src/qt/locale/bitcoin_zh_TW.qm: src/qt/locale/bitcoin_zh_TW.ts
+	$(DEPSDIR)/native/bin/lrelease src/qt/locale/bitcoin_zh_TW.ts -qm src/qt/locale/bitcoin_zh_TW.qm
+
+compiler_rcc_make_all: qrc_bitcoin.cpp
+
+compiler_rcc_clean:
+	-$(DEL_FILE) qrc_bitcoin.cpp
+
+qrc_bitcoin.cpp: src/qt/bitcoin.qrc \
+		src/qt/res/images/askpassphrasepage-background.png \
+		src/qt/res/images/post.png \
+		src/qt/res/images/splash.png \
+		src/qt/res/images/aboutBackground.png \
+		src/qt/res/fonts/Lato2OFL/Lato-Regular.ttf \
+		src/qt/res/fonts/Lato2OFL/Lato-Bold.ttf \
+		src/qt/locale/bitcoin_en.ts \
+		src/qt/res/icons/connect3_16.png \
+		src/qt/res/icons/add.png \
+		src/qt/res/icons/connect4_16.png \
+		src/qt/res/icons/veriSend.png \
+		src/qt/res/icons/unconfirmed.png \
+		src/qt/res/icons/address-book-menu.png \
+		src/qt/res/icons/staking.png \
+		src/qt/res/icons/veriSwap.png \
+		src/qt/res/icons/lock_open.png \
+		src/qt/res/icons/maximize.png \
+		src/qt/res/icons/tughlaq-16.png \
+		src/qt/res/icons/tughlaq-80.png \
+		src/qt/res/icons/PoSTicon.png \
+		src/qt/res/icons/forward.png \
+		src/qt/res/icons/miningon.png \
+		src/qt/res/icons/balance.png \
+		src/qt/res/icons/send.png \
+		src/qt/res/icons/transaction2.png \
+		src/qt/res/icons/tughlaq-80.png \
+		src/qt/res/icons/status_good.png \
+		src/qt/res/icons/verify.png \
+		src/qt/res/icons/remove.png \
+		src/qt/res/icons/back.png \
+		src/qt/res/icons/filesave.png \
+		src/qt/res/icons/editcopy.png \
+		src/qt/res/icons/status_bad.png \
+		src/qt/res/icons/sendButton.png \
+		src/qt/res/icons/transaction0.png \
+		src/qt/res/icons/clock1.png \
+		src/qt/res/icons/clock2.png \
+		src/qt/res/icons/clock3.png \
+		src/qt/res/icons/clock4.png \
+		src/qt/res/icons/tx_output.png \
+		src/qt/res/icons/clock5.png \
+		src/qt/res/icons/spendable.png \
+		src/qt/res/icons/update.png \
+		src/qt/res/icons/history.png \
+		src/qt/res/icons/receive.png \
+		src/qt/res/icons/tx_mined.png \
+		src/qt/res/icons/about-qt.png \
+		src/qt/res/icons/forums.png \
+		src/qt/res/icons/lock_closed.png \
+		src/qt/res/icons/miningoff.png \
+		src/qt/res/icons/configure.png \
+		src/qt/res/icons/editpaste.png \
+		src/qt/res/icons/address-book.png \
+		src/qt/res/icons/staking_off.png \
+		src/qt/res/icons/tx_inout.png \
+		src/qt/res/icons/logout.png \
+		src/qt/res/icons/chat.png \
+		src/qt/res/icons/quit.png \
+		src/qt/res/icons/tughlaq-16.png \
+		src/qt/res/icons/blockchain-dark.png \
+		src/qt/res/icons/export.png \
+		src/qt/res/icons/notsynced.png \
+		src/qt/res/icons/debugwindow.png \
+		src/qt/res/icons/transaction_conflicted.png \
+		src/qt/res/icons/home.png \
+		src/qt/res/icons/overview.png \
+		src/qt/res/icons/rescan.png \
+		src/qt/res/icons/key.png \
+		src/qt/res/icons/about.png \
+		src/qt/res/icons/verifyButton.png \
+		src/qt/res/icons/blockchain.png \
+		src/qt/res/icons/total.png \
+		src/qt/res/icons/qrcode.png \
+		src/qt/res/icons/reload.png \
+		src/qt/res/icons/status_warn.png \
+		src/qt/res/icons/tx_input.png \
+		src/qt/res/icons/editButton.png \
+		src/qt/res/icons/website.png \
+		src/qt/res/icons/minimize.png \
+		src/qt/res/icons/tughlaq-128-trans.png \
+		src/qt/res/icons/edit.png \
+		src/qt/res/icons/connect0_16.png \
+		src/qt/res/icons/connect1_16.png \
+		src/qt/res/icons/forum.png \
+		src/qt/res/icons/connect2_16.png
+	$(DEPSDIR)/native/bin/rcc -name bitcoin src/qt/bitcoin.qrc -o qrc_bitcoin.cpp
+
+compiler_moc_predefs_make_all: build/moc_predefs.h
+
+compiler_moc_predefs_clean:
+	-$(DEL_FILE) build/moc_predefs.h
+
+build/moc_predefs.h: /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
+	$(CXX) -pipe -fstack-protector-all --param ssp-buffer-size=1 -O2 -D_REENTRANT -fdiagnostics-show-option -Wall -Wextra -Wno-ignored-qualifiers -Wformat -Wformat-security -Wno-unused-parameter -Wstack-protector -dM -E -o build/moc_predefs.h /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
+
+compiler_moc_header_make_all: build/moc_bitcoingui.cpp build/moc_transactiontablemodel.cpp build/moc_addresstablemodel.cpp build/moc_optionsdialog.cpp build/moc_coincontroldialog.cpp build/moc_coincontroltreewidget.cpp build/moc_sendcoinsdialog.cpp build/moc_addressbookpage.cpp build/moc_signverifymessagedialog.cpp build/moc_aboutdialog.cpp build/moc_editaddressdialog.cpp build/moc_bitcoinaddressvalidator.cpp build/moc_clientmodel.cpp build/moc_guiutil.cpp build/moc_optionsmodel.cpp build/moc_monitoreddatamapper.cpp build/moc_transactiondesc.cpp build/moc_transactiondescdialog.cpp build/moc_bitcoinamountfield.cpp build/moc_transactionfilterproxy.cpp build/moc_transactionview.cpp build/moc_transactionspage.cpp build/moc_walletmodel.cpp build/moc_overviewpage.cpp build/moc_csvmodelwriter.cpp build/moc_sendcoinsentry.cpp build/moc_qvalidatedlineedit.cpp build/moc_qvaluecombobox.cpp build/moc_askpassphrasedialog.cpp build/moc_askpassphrasepage.cpp build/moc_forumspage.cpp build/moc_notificator.cpp build/moc_rpcconsole.cpp build/moc_downloader.cpp build/moc_updatedialog.cpp build/moc_autosaver.cpp build/moc_rescandialog.cpp build/moc_postdialog.cpp build/moc_whatsnewdialog.cpp build/moc_qrcodedialog.cpp
+
+compiler_moc_header_clean:
+	-$(DEL_FILE) build/moc_bitcoingui.cpp build/moc_transactiontablemodel.cpp build/moc_addresstablemodel.cpp build/moc_optionsdialog.cpp build/moc_coincontroldialog.cpp build/moc_coincontroltreewidget.cpp build/moc_sendcoinsdialog.cpp build/moc_addressbookpage.cpp build/moc_signverifymessagedialog.cpp build/moc_aboutdialog.cpp build/moc_editaddressdialog.cpp build/moc_bitcoinaddressvalidator.cpp build/moc_clientmodel.cpp build/moc_guiutil.cpp build/moc_optionsmodel.cpp build/moc_monitoreddatamapper.cpp build/moc_transactiondesc.cpp build/moc_transactiondescdialog.cpp build/moc_bitcoinamountfield.cpp build/moc_transactionfilterproxy.cpp build/moc_transactionview.cpp build/moc_transactionspage.cpp build/moc_walletmodel.cpp build/moc_overviewpage.cpp build/moc_csvmodelwriter.cpp build/moc_sendcoinsentry.cpp build/moc_qvalidatedlineedit.cpp build/moc_qvaluecombobox.cpp build/moc_askpassphrasedialog.cpp build/moc_askpassphrasepage.cpp build/moc_forumspage.cpp build/moc_notificator.cpp build/moc_rpcconsole.cpp build/moc_downloader.cpp build/moc_updatedialog.cpp build/moc_autosaver.cpp build/moc_rescandialog.cpp build/moc_postdialog.cpp build/moc_whatsnewdialog.cpp build/moc_qrcodedialog.cpp
+
+build/moc_bitcoingui.cpp: src/qt/bitcoingui.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I src -I src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/bitcoingui.h -o build/moc_bitcoingui.cpp
+
+build/moc_transactiontablemodel.cpp: src/qt/transactiontablemodel.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/transactiontablemodel.h -o build/moc_transactiontablemodel.cpp
+
+build/moc_addresstablemodel.cpp: src/qt/addresstablemodel.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/addresstablemodel.h -o build/moc_addresstablemodel.cpp
+
+build/moc_optionsdialog.cpp: src/qt/optionsdialog.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/optionsdialog.h -o build/moc_optionsdialog.cpp
+
+build/moc_coincontroldialog.cpp: src/qt/coincontroldialog.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/coincontroldialog.h -o build/moc_coincontroldialog.cpp
+
+build/moc_coincontroltreewidget.cpp: src/qt/coincontroltreewidget.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/coincontroltreewidget.h -o build/moc_coincontroltreewidget.cpp
+
+build/moc_sendcoinsdialog.cpp: src/qt/sendcoinsdialog.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/sendcoinsdialog.h -o build/moc_sendcoinsdialog.cpp
+
+build/moc_addressbookpage.cpp: src/qt/addressbookpage.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/addressbookpage.h -o build/moc_addressbookpage.cpp
+
+build/moc_signverifymessagedialog.cpp: src/qt/signverifymessagedialog.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/signverifymessagedialog.h -o build/moc_signverifymessagedialog.cpp
+
+build/moc_aboutdialog.cpp: src/qt/aboutdialog.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/aboutdialog.h -o build/moc_aboutdialog.cpp
+
+build/moc_editaddressdialog.cpp: src/qt/editaddressdialog.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/editaddressdialog.h -o build/moc_editaddressdialog.cpp
+
+build/moc_bitcoinaddressvalidator.cpp: src/qt/bitcoinaddressvalidator.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/bitcoinaddressvalidator.h -o build/moc_bitcoinaddressvalidator.cpp
+
+build/moc_clientmodel.cpp: src/qt/clientmodel.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/clientmodel.h -o build/moc_clientmodel.cpp
+
+build/moc_guiutil.cpp: src/qt/guiutil.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/guiutil.h -o build/moc_guiutil.cpp
+
+build/moc_optionsmodel.cpp: src/qt/optionsmodel.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/optionsmodel.h -o build/moc_optionsmodel.cpp
+
+build/moc_monitoreddatamapper.cpp: src/qt/monitoreddatamapper.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/monitoreddatamapper.h -o build/moc_monitoreddatamapper.cpp
+
+build/moc_transactiondesc.cpp: src/qt/transactiondesc.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/transactiondesc.h -o build/moc_transactiondesc.cpp
+
+build/moc_transactiondescdialog.cpp: src/qt/transactiondescdialog.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/transactiondescdialog.h -o build/moc_transactiondescdialog.cpp
+
+build/moc_bitcoinamountfield.cpp: src/qt/bitcoinamountfield.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/bitcoinamountfield.h -o build/moc_bitcoinamountfield.cpp
+
+build/moc_transactionfilterproxy.cpp: src/qt/transactionfilterproxy.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/transactionfilterproxy.h -o build/moc_transactionfilterproxy.cpp
+
+build/moc_transactionview.cpp: src/qt/transactionview.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/transactionview.h -o build/moc_transactionview.cpp
+
+build/moc_transactionspage.cpp: src/qt/transactionspage.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/transactionspage.h -o build/moc_transactionspage.cpp
+
+build/moc_walletmodel.cpp: src/allocators.h \
+		src/qt/walletmodel.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/walletmodel.h -o build/moc_walletmodel.cpp
+
+build/moc_overviewpage.cpp: src/qt/overviewpage.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/overviewpage.h -o build/moc_overviewpage.cpp
+
+build/moc_csvmodelwriter.cpp: src/qt/csvmodelwriter.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/csvmodelwriter.h -o build/moc_csvmodelwriter.cpp
+
+build/moc_sendcoinsentry.cpp: src/qt/sendcoinsentry.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/sendcoinsentry.h -o build/moc_sendcoinsentry.cpp
+
+build/moc_qvalidatedlineedit.cpp: src/qt/qvalidatedlineedit.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/qvalidatedlineedit.h -o build/moc_qvalidatedlineedit.cpp
+
+build/moc_qvaluecombobox.cpp: src/qt/qvaluecombobox.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/qvaluecombobox.h -o build/moc_qvaluecombobox.cpp
+
+build/moc_askpassphrasedialog.cpp: src/qt/askpassphrasedialog.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/askpassphrasedialog.h -o build/moc_askpassphrasedialog.cpp
+
+build/moc_askpassphrasepage.cpp: src/qt/askpassphrasepage.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/askpassphrasepage.h -o build/moc_askpassphrasepage.cpp
+
+build/moc_forumspage.cpp: src/qt/forumspage.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/forumspage.h -o build/moc_forumspage.cpp
+
+build/moc_notificator.cpp: src/qt/notificator.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/notificator.h -o build/moc_notificator.cpp
+
+build/moc_rpcconsole.cpp: src/qt/rpcconsole.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/rpcconsole.h -o build/moc_rpcconsole.cpp
+
+build/moc_downloader.cpp: src/qt/walletmodel.h \
+		src/allocators.h \
+		src/qt/downloader.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/downloader.h -o build/moc_downloader.cpp
+
+build/moc_updatedialog.cpp: src/qt/updatedialog.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/updatedialog.h -o build/moc_updatedialog.cpp
+
+build/moc_autosaver.cpp: src/qt/autosaver.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/autosaver.h -o build/moc_autosaver.cpp
+
+build/moc_rescandialog.cpp: src/qt/rescandialog.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/rescandialog.h -o build/moc_rescandialog.cpp
+
+build/moc_postdialog.cpp: src/qt/postdialog.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/postdialog.h -o build/moc_postdialog.cpp
+
+build/moc_whatsnewdialog.cpp: src/qt/whatsnewdialog.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/whatsnewdialog.h -o build/moc_whatsnewdialog.cpp
+
+build/moc_qrcodedialog.cpp: src/qt/qrcodedialog.h \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/qrcodedialog.h -o build/moc_qrcodedialog.cpp
+
+compiler_moc_source_make_all: build/overviewpage.moc build/rpcconsole.moc
+compiler_moc_source_clean:
+	-$(DEL_FILE) build/overviewpage.moc build/rpcconsole.moc
+
+build/overviewpage.moc: src/qt/overviewpage.h \
+		build/ui_overviewpage.h \
+		src/util.h \
+		src/uint256.h \
+		src/netbase.h \
+		src/serialize.h \
+		src/allocators.h \
+		src/version.h \
+		src/clientversion.h \
+		src/compat.h \
+		src/miner.h \
+		src/wallet.h \
+		src/main.h \
+		src/sync.h \
+		src/script.h \
+		src/keystore.h \
+		src/crypter.h \
+		src/key.h \
+		src/bignum.h \
+		src/block.h \
+		src/transaction.h \
+		src/txinout.h \
+		src/mempool.h \
+		src/txdb.h \
+		src/txdb-leveldb.h \
+		src/leveldb/include/leveldb/db.h \
+		src/leveldb/include/leveldb/iterator.h \
+		src/leveldb/include/leveldb/slice.h \
+		src/leveldb/include/leveldb/status.h \
+		src/leveldb/include/leveldb/options.h \
+		src/leveldb/include/leveldb/write_batch.h \
+		src/ui_interface.h \
+		src/walletdb.h \
+		src/db.h \
+		src/base58.h \
+		src/init.h \
+		src/qt/walletmodel.h \
+		src/qt/clientmodel.h \
+		src/qt/bitcoinunits.h \
+		src/qt/optionsmodel.h \
+		src/qt/transactiontablemodel.h \
+		src/qt/transactionfilterproxy.h \
+		src/qt/guiutil.h \
+		src/qt/guiconstants.h \
+		src/qt/bitcoingui.h \
+		src/bitcoinrpc.h \
+		src/json/json_spirit_reader_template.h \
+		src/json/json_spirit_value.h \
+		src/json/json_spirit_error_position.h \
+		src/json/json_spirit_writer_template.h \
+		src/json/json_spirit_utils.h \
+		src/checkpoints.h \
+		src/qt/overviewpage.cpp \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/overviewpage.cpp -o build/overviewpage.moc
+
+build/rpcconsole.moc: src/qt/rpcconsole.h \
+		build/ui_rpcconsole.h \
+		src/qt/guiconstants.h \
+		src/qt/clientmodel.h \
+		src/bitcoinrpc.h \
+		src/json/json_spirit_reader_template.h \
+		src/json/json_spirit_value.h \
+		src/json/json_spirit_error_position.h \
+		src/json/json_spirit_writer_template.h \
+		src/json/json_spirit_utils.h \
+		src/util.h \
+		src/uint256.h \
+		src/netbase.h \
+		src/serialize.h \
+		src/allocators.h \
+		src/version.h \
+		src/clientversion.h \
+		src/compat.h \
+		src/checkpoints.h \
+		src/qt/guiutil.h \
+		src/qt/rpcconsole.cpp \
+		build/moc_predefs.h \
+		$(MOC)
+	$(MOC) $(DEFINES) --include build/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I . -I ./src -I ./src/json -I ./src/qt -I ./src/leveldb/include -I ./src/leveldb/helpers -I ./src/quazip -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtNetwork -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/qt/rpcconsole.cpp -o build/rpcconsole.moc
+
+compiler_uic_make_all: build/ui_coincontroldialog.h build/ui_sendcoinsdialog.h build/ui_forumspage.h build/ui_addressbookpage.h build/ui_signverifymessagedialog.h build/ui_aboutdialog.h build/ui_editaddressdialog.h build/ui_transactiondescdialog.h build/ui_overviewpage.h build/ui_sendcoinsentry.h build/ui_askpassphrasedialog.h build/ui_askpassphrasepage.h build/ui_rpcconsole.h build/ui_optionsdialog.h build/ui_downloader.h build/ui_updatedialog.h build/ui_rescandialog.h build/ui_transactionspage.h build/ui_postdialog.h build/ui_whatsnewdialog.h build/ui_qrcodedialog.h
+
+compiler_uic_clean:
+	-$(DEL_FILE) build/ui_coincontroldialog.h build/ui_sendcoinsdialog.h build/ui_forumspage.h build/ui_addressbookpage.h build/ui_signverifymessagedialog.h build/ui_aboutdialog.h build/ui_editaddressdialog.h build/ui_transactiondescdialog.h build/ui_overviewpage.h build/ui_sendcoinsentry.h build/ui_askpassphrasedialog.h build/ui_askpassphrasepage.h build/ui_rpcconsole.h build/ui_optionsdialog.h build/ui_downloader.h build/ui_updatedialog.h build/ui_rescandialog.h build/ui_transactionspage.h build/ui_postdialog.h build/ui_whatsnewdialog.h build/ui_qrcodedialog.h
+
+build/ui_coincontroldialog.h: src/qt/forms/coincontroldialog.ui \
+		$(DEPSDIR)/native/bin/uic \
+		src/qt/coincontroltreewidget.h
+	$(DEPSDIR)/native/bin/uic src/qt/forms/coincontroldialog.ui -o build/ui_coincontroldialog.h
+
+build/ui_sendcoinsdialog.h: src/qt/forms/sendcoinsdialog.ui \
+		$(DEPSDIR)/native/bin/uic
+	$(DEPSDIR)/native/bin/uic src/qt/forms/sendcoinsdialog.ui -o build/ui_sendcoinsdialog.h
+
+build/ui_forumspage.h: src/qt/forms/forumspage.ui \
+		$(DEPSDIR)/native/bin/uic
+	$(DEPSDIR)/native/bin/uic src/qt/forms/forumspage.ui -o build/ui_forumspage.h
+
+build/ui_addressbookpage.h: src/qt/forms/addressbookpage.ui \
+		$(DEPSDIR)/native/bin/uic
+	$(DEPSDIR)/native/bin/uic src/qt/forms/addressbookpage.ui -o build/ui_addressbookpage.h
+
+build/ui_signverifymessagedialog.h: src/qt/forms/signverifymessagedialog.ui \
+		$(DEPSDIR)/native/bin/uic \
+		src/qt/qvalidatedlineedit.h
+	$(DEPSDIR)/native/bin/uic src/qt/forms/signverifymessagedialog.ui -o build/ui_signverifymessagedialog.h
+
+build/ui_aboutdialog.h: src/qt/forms/aboutdialog.ui \
+		$(DEPSDIR)/native/bin/uic
+	$(DEPSDIR)/native/bin/uic src/qt/forms/aboutdialog.ui -o build/ui_aboutdialog.h
+
+build/ui_editaddressdialog.h: src/qt/forms/editaddressdialog.ui \
+		$(DEPSDIR)/native/bin/uic
+	$(DEPSDIR)/native/bin/uic src/qt/forms/editaddressdialog.ui -o build/ui_editaddressdialog.h
+
+build/ui_transactiondescdialog.h: src/qt/forms/transactiondescdialog.ui \
+		$(DEPSDIR)/native/bin/uic
+	$(DEPSDIR)/native/bin/uic src/qt/forms/transactiondescdialog.ui -o build/ui_transactiondescdialog.h
+
+build/ui_overviewpage.h: src/qt/forms/overviewpage.ui \
+		$(DEPSDIR)/native/bin/uic
+	$(DEPSDIR)/native/bin/uic src/qt/forms/overviewpage.ui -o build/ui_overviewpage.h
+
+build/ui_sendcoinsentry.h: src/qt/forms/sendcoinsentry.ui \
+		$(DEPSDIR)/native/bin/uic \
+		src/qt/qvalidatedlineedit.h \
+		src/qt/bitcoinamountfield.h
+	$(DEPSDIR)/native/bin/uic src/qt/forms/sendcoinsentry.ui -o build/ui_sendcoinsentry.h
+
+build/ui_askpassphrasedialog.h: src/qt/forms/askpassphrasedialog.ui \
+		$(DEPSDIR)/native/bin/uic
+	$(DEPSDIR)/native/bin/uic src/qt/forms/askpassphrasedialog.ui -o build/ui_askpassphrasedialog.h
+
+build/ui_askpassphrasepage.h: src/qt/forms/askpassphrasepage.ui \
+		$(DEPSDIR)/native/bin/uic
+	$(DEPSDIR)/native/bin/uic src/qt/forms/askpassphrasepage.ui -o build/ui_askpassphrasepage.h
+
+build/ui_rpcconsole.h: src/qt/forms/rpcconsole.ui \
+		$(DEPSDIR)/native/bin/uic
+	$(DEPSDIR)/native/bin/uic src/qt/forms/rpcconsole.ui -o build/ui_rpcconsole.h
+
+build/ui_optionsdialog.h: src/qt/forms/optionsdialog.ui \
+		$(DEPSDIR)/native/bin/uic \
+		src/qt/qvalidatedlineedit.h \
+		src/qt/bitcoinamountfield.h \
+		src/qt/qvaluecombobox.h
+	$(DEPSDIR)/native/bin/uic src/qt/forms/optionsdialog.ui -o build/ui_optionsdialog.h
+
+build/ui_downloader.h: src/qt/forms/downloader.ui \
+		$(DEPSDIR)/native/bin/uic
+	$(DEPSDIR)/native/bin/uic src/qt/forms/downloader.ui -o build/ui_downloader.h
+
+build/ui_updatedialog.h: src/qt/forms/updatedialog.ui \
+		$(DEPSDIR)/native/bin/uic
+	$(DEPSDIR)/native/bin/uic src/qt/forms/updatedialog.ui -o build/ui_updatedialog.h
+
+build/ui_rescandialog.h: src/qt/forms/rescandialog.ui \
+		$(DEPSDIR)/native/bin/uic
+	$(DEPSDIR)/native/bin/uic src/qt/forms/rescandialog.ui -o build/ui_rescandialog.h
+
+build/ui_transactionspage.h: src/qt/forms/transactionspage.ui \
+		$(DEPSDIR)/native/bin/uic
+	$(DEPSDIR)/native/bin/uic src/qt/forms/transactionspage.ui -o build/ui_transactionspage.h
+
+build/ui_postdialog.h: src/qt/forms/postdialog.ui \
+		$(DEPSDIR)/native/bin/uic
+	$(DEPSDIR)/native/bin/uic src/qt/forms/postdialog.ui -o build/ui_postdialog.h
+
+build/ui_whatsnewdialog.h: src/qt/forms/whatsnewdialog.ui \
+		$(DEPSDIR)/native/bin/uic
+	$(DEPSDIR)/native/bin/uic src/qt/forms/whatsnewdialog.ui -o build/ui_whatsnewdialog.h
+
+build/ui_qrcodedialog.h: src/qt/forms/qrcodedialog.ui \
+		$(DEPSDIR)/native/bin/uic \
+		src/qt/bitcoinamountfield.h
+	$(DEPSDIR)/native/bin/uic src/qt/forms/qrcodedialog.ui -o build/ui_qrcodedialog.h
+
+compiler_yacc_decl_make_all:
+compiler_yacc_decl_clean:
+compiler_yacc_impl_make_all:
+compiler_yacc_impl_clean:
+compiler_lex_make_all:
+compiler_lex_clean:
+compiler_clean: compiler_TSQM_clean compiler_rcc_clean compiler_moc_predefs_clean compiler_moc_header_clean compiler_moc_source_clean compiler_uic_clean 
+
+####### Compile
+
+build/txdb-leveldb.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/txdb-leveldb.o src/txdb-leveldb.cpp
+
+build/bitcoin.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/bitcoin.o src/qt/bitcoin.cpp
+
+build/bitcoingui.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/bitcoingui.o src/qt/bitcoingui.cpp
+
+build/transactiontablemodel.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/transactiontablemodel.o src/qt/transactiontablemodel.cpp
+
+build/addresstablemodel.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/addresstablemodel.o src/qt/addresstablemodel.cpp
+
+build/optionsdialog.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/optionsdialog.o src/qt/optionsdialog.cpp
+
+build/sendcoinsdialog.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/sendcoinsdialog.o src/qt/sendcoinsdialog.cpp
+
+build/coincontroldialog.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/coincontroldialog.o src/qt/coincontroldialog.cpp
+
+build/coincontroltreewidget.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/coincontroltreewidget.o src/qt/coincontroltreewidget.cpp
+
+build/addressbookpage.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/addressbookpage.o src/qt/addressbookpage.cpp
+
+build/signverifymessagedialog.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/signverifymessagedialog.o src/qt/signverifymessagedialog.cpp
+
+build/aboutdialog.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/aboutdialog.o src/qt/aboutdialog.cpp
+
+build/editaddressdialog.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/editaddressdialog.o src/qt/editaddressdialog.cpp
+
+build/bitcoinaddressvalidator.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/bitcoinaddressvalidator.o src/qt/bitcoinaddressvalidator.cpp
+
+build/alert.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/alert.o src/alert.cpp
+
+build/version.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/version.o src/version.cpp
+
+build/sync.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/sync.o src/sync.cpp
+
+build/util.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/util.o src/util.cpp
+
+build/netbase.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/netbase.o src/netbase.cpp
+
+build/key.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/key.o src/key.cpp
+
+build/script.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/script.o src/script.cpp
+
+build/main.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/main.o src/main.cpp
+
+build/miner.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/miner.o src/miner.cpp
+
+build/init.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/init.o src/init.cpp
+
+build/net.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/net.o src/net.cpp
+
+build/node.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/node.o src/node.cpp
+
+build/irc.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/irc.o src/irc.cpp
+
+build/checkpoints.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/checkpoints.o src/checkpoints.cpp
+
+build/addrman.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/addrman.o src/addrman.cpp
+
+build/db.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/db.o src/db.cpp
+
+build/walletdb.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/walletdb.o src/walletdb.cpp
+
+build/mempool.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/mempool.o src/mempool.cpp
+
+build/block.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/block.o src/block.cpp
+
+build/transaction.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/transaction.o src/transaction.cpp
+
+build/clientmodel.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/clientmodel.o src/qt/clientmodel.cpp
+
+build/guiutil.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/guiutil.o src/qt/guiutil.cpp
+
+build/transactionrecord.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/transactionrecord.o src/qt/transactionrecord.cpp
+
+build/optionsmodel.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/optionsmodel.o src/qt/optionsmodel.cpp
+
+build/monitoreddatamapper.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/monitoreddatamapper.o src/qt/monitoreddatamapper.cpp
+
+build/transactiondesc.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/transactiondesc.o src/qt/transactiondesc.cpp
+
+build/transactiondescdialog.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/transactiondescdialog.o src/qt/transactiondescdialog.cpp
+
+build/bitcoinstrings.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/bitcoinstrings.o src/qt/bitcoinstrings.cpp
+
+build/bitcoinamountfield.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/bitcoinamountfield.o src/qt/bitcoinamountfield.cpp
+
+build/wallet.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/wallet.o src/wallet.cpp
+
+build/keystore.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/keystore.o src/keystore.cpp
+
+build/transactionfilterproxy.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/transactionfilterproxy.o src/qt/transactionfilterproxy.cpp
+
+build/transactionview.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/transactionview.o src/qt/transactionview.cpp
+
+build/transactionspage.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/transactionspage.o src/qt/transactionspage.cpp
+
+build/walletmodel.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/walletmodel.o src/qt/walletmodel.cpp
+
+build/bitcoinrpc.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/bitcoinrpc.o src/bitcoinrpc.cpp
+
+build/rpcdump.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/rpcdump.o src/rpcdump.cpp
+
+build/rpcnet.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/rpcnet.o src/rpcnet.cpp
+
+build/rpcmining.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/rpcmining.o src/rpcmining.cpp
+
+build/rpcwallet.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/rpcwallet.o src/rpcwallet.cpp
+
+build/rpcblockchain.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/rpcblockchain.o src/rpcblockchain.cpp
+
+build/rpcrawtransaction.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/rpcrawtransaction.o src/rpcrawtransaction.cpp
+
+build/overviewpage.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/overviewpage.o src/qt/overviewpage.cpp
+
+build/csvmodelwriter.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/csvmodelwriter.o src/qt/csvmodelwriter.cpp
+
+build/crypter.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/crypter.o src/crypter.cpp
+
+build/sendcoinsentry.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/sendcoinsentry.o src/qt/sendcoinsentry.cpp
+
+build/qvalidatedlineedit.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/qvalidatedlineedit.o src/qt/qvalidatedlineedit.cpp
+
+build/bitcoinunits.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/bitcoinunits.o src/qt/bitcoinunits.cpp
+
+build/qvaluecombobox.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/qvaluecombobox.o src/qt/qvaluecombobox.cpp
+
+build/askpassphrasedialog.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/askpassphrasedialog.o src/qt/askpassphrasedialog.cpp
+
+build/askpassphrasepage.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/askpassphrasepage.o src/qt/askpassphrasepage.cpp
+
+build/protocol.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/protocol.o src/protocol.cpp
+
+build/notificator.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/notificator.o src/qt/notificator.cpp
+
+build/qtipcserver.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/qtipcserver.o src/qt/qtipcserver.cpp
+
+build/rpcconsole.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/rpcconsole.o src/qt/rpcconsole.cpp
+
+build/downloader.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/downloader.o src/qt/downloader.cpp
+
+build/updatedialog.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/updatedialog.o src/qt/updatedialog.cpp
+
+build/rescandialog.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/rescandialog.o src/qt/rescandialog.cpp
+
+build/autosaver.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/autosaver.o src/qt/autosaver.cpp
+
+build/forumspage.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/forumspage.o src/qt/forumspage.cpp
+
+build/noui.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/noui.o src/noui.cpp
+
+build/postdialog.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/postdialog.o src/qt/postdialog.cpp
+
+build/whatsnewdialog.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/whatsnewdialog.o src/qt/whatsnewdialog.cpp
+
+build/scrypt.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/scrypt.o src/scrypt.cpp
+
+build/scrypt-x64.o:
+	$(CC) -c $(CFLAGS) $(INCPATH) -o build/scrypt-x64.o src/scrypt-x64.S
+
+build/scrypt-x86.o:
+	$(CC) -c $(CFLAGS) $(INCPATH) -o build/scrypt-x86.o src/scrypt-x86.S
+
+build/scrypt-arm.o:
+	$(CC) -c $(CFLAGS) $(INCPATH) -o build/scrypt-arm.o src/scrypt-arm.S
+
+build/sha2-x64.o:
+	$(CC) -c $(CFLAGS) $(INCPATH) -o build/sha2-x64.o src/sha2-x64.S
+
+build/sha2-x86.o:
+	$(CC) -c $(CFLAGS) $(INCPATH) -o build/sha2-x86.o src/sha2-x86.S
+
+build/sha2-arm.o:
+	$(CC) -c $(CFLAGS) $(INCPATH) -o build/sha2-arm.o src/sha2-arm.S
+
+build/qrcodedialog.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/qrcodedialog.o src/qt/qrcodedialog.cpp
+
+build/qrc_bitcoin.o:
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/qrc_bitcoin.o qrc_bitcoin.cpp
+
+build/moc_bitcoingui.o: build/moc_bitcoingui.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_bitcoingui.o build/moc_bitcoingui.cpp
+
+build/moc_transactiontablemodel.o: build/moc_transactiontablemodel.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_transactiontablemodel.o build/moc_transactiontablemodel.cpp
+
+build/moc_addresstablemodel.o: build/moc_addresstablemodel.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_addresstablemodel.o build/moc_addresstablemodel.cpp
+
+build/moc_optionsdialog.o: build/moc_optionsdialog.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_optionsdialog.o build/moc_optionsdialog.cpp
+
+build/moc_coincontroldialog.o: build/moc_coincontroldialog.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_coincontroldialog.o build/moc_coincontroldialog.cpp
+
+build/moc_coincontroltreewidget.o: build/moc_coincontroltreewidget.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_coincontroltreewidget.o build/moc_coincontroltreewidget.cpp
+
+build/moc_sendcoinsdialog.o: build/moc_sendcoinsdialog.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_sendcoinsdialog.o build/moc_sendcoinsdialog.cpp
+
+build/moc_addressbookpage.o: build/moc_addressbookpage.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_addressbookpage.o build/moc_addressbookpage.cpp
+
+build/moc_signverifymessagedialog.o: build/moc_signverifymessagedialog.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_signverifymessagedialog.o build/moc_signverifymessagedialog.cpp
+
+build/moc_aboutdialog.o: build/moc_aboutdialog.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_aboutdialog.o build/moc_aboutdialog.cpp
+
+build/moc_editaddressdialog.o: build/moc_editaddressdialog.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_editaddressdialog.o build/moc_editaddressdialog.cpp
+
+build/moc_bitcoinaddressvalidator.o: build/moc_bitcoinaddressvalidator.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_bitcoinaddressvalidator.o build/moc_bitcoinaddressvalidator.cpp
+
+build/moc_clientmodel.o: build/moc_clientmodel.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_clientmodel.o build/moc_clientmodel.cpp
+
+build/moc_guiutil.o: build/moc_guiutil.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_guiutil.o build/moc_guiutil.cpp
+
+build/moc_optionsmodel.o: build/moc_optionsmodel.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_optionsmodel.o build/moc_optionsmodel.cpp
+
+build/moc_monitoreddatamapper.o: build/moc_monitoreddatamapper.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_monitoreddatamapper.o build/moc_monitoreddatamapper.cpp
+
+build/moc_transactiondesc.o: build/moc_transactiondesc.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_transactiondesc.o build/moc_transactiondesc.cpp
+
+build/moc_transactiondescdialog.o: build/moc_transactiondescdialog.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_transactiondescdialog.o build/moc_transactiondescdialog.cpp
+
+build/moc_bitcoinamountfield.o: build/moc_bitcoinamountfield.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_bitcoinamountfield.o build/moc_bitcoinamountfield.cpp
+
+build/moc_transactionfilterproxy.o: build/moc_transactionfilterproxy.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_transactionfilterproxy.o build/moc_transactionfilterproxy.cpp
+
+build/moc_transactionview.o: build/moc_transactionview.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_transactionview.o build/moc_transactionview.cpp
+
+build/moc_transactionspage.o: build/moc_transactionspage.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_transactionspage.o build/moc_transactionspage.cpp
+
+build/moc_walletmodel.o: build/moc_walletmodel.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_walletmodel.o build/moc_walletmodel.cpp
+
+build/moc_overviewpage.o: build/moc_overviewpage.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_overviewpage.o build/moc_overviewpage.cpp
+
+build/moc_csvmodelwriter.o: build/moc_csvmodelwriter.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_csvmodelwriter.o build/moc_csvmodelwriter.cpp
+
+build/moc_sendcoinsentry.o: build/moc_sendcoinsentry.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_sendcoinsentry.o build/moc_sendcoinsentry.cpp
+
+build/moc_qvalidatedlineedit.o: build/moc_qvalidatedlineedit.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_qvalidatedlineedit.o build/moc_qvalidatedlineedit.cpp
+
+build/moc_qvaluecombobox.o: build/moc_qvaluecombobox.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_qvaluecombobox.o build/moc_qvaluecombobox.cpp
+
+build/moc_askpassphrasedialog.o: build/moc_askpassphrasedialog.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_askpassphrasedialog.o build/moc_askpassphrasedialog.cpp
+
+build/moc_askpassphrasepage.o: build/moc_askpassphrasepage.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_askpassphrasepage.o build/moc_askpassphrasepage.cpp
+
+build/moc_forumspage.o: build/moc_forumspage.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_forumspage.o build/moc_forumspage.cpp
+
+build/moc_notificator.o: build/moc_notificator.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_notificator.o build/moc_notificator.cpp
+
+build/moc_rpcconsole.o: build/moc_rpcconsole.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_rpcconsole.o build/moc_rpcconsole.cpp
+
+build/moc_downloader.o: build/moc_downloader.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_downloader.o build/moc_downloader.cpp
+
+build/moc_updatedialog.o: build/moc_updatedialog.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_updatedialog.o build/moc_updatedialog.cpp
+
+build/moc_autosaver.o: build/moc_autosaver.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_autosaver.o build/moc_autosaver.cpp
+
+build/moc_rescandialog.o: build/moc_rescandialog.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_rescandialog.o build/moc_rescandialog.cpp
+
+build/moc_postdialog.o: build/moc_postdialog.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_postdialog.o build/moc_postdialog.cpp
+
+build/moc_whatsnewdialog.o: build/moc_whatsnewdialog.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_whatsnewdialog.o build/moc_whatsnewdialog.cpp
+
+build/moc_qrcodedialog.o: build/moc_qrcodedialog.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o build/moc_qrcodedialog.o build/moc_qrcodedialog.cpp
+
+####### Install
+
+install:  FORCE
+
+uninstall:  FORCE
+
+FORCE:
+
