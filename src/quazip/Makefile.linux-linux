@@ -5,12 +5,14 @@
 ####### Compiler, tools and options
 
 TARGET_PLATFORM:=x86_64
-DEPSDIR=/extradisk/tughlaq/depends/$(TARGET_PLATFORM)-pc-linux-gnu/
-CC            = x86_64-linux-gnu-gcc
-CXX           = x86_64-linux-gnu-g++
+DEPSDIR       = ../../depends/$(TARGET_PLATFORM)-pc-linux-gnu/
+#CC            = x86_64-linux-gnu-gcc
+CC            = gcc
+#CXX           = x86_64-linux-gnu-g++
+CXX           = g++
 DEFINES       = -DQUAZIP_BUILD -DQUAZIP_STATIC -DQT_NO_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB
-CFLAGS        = -pipe -O2 -fPIC -Wall -W -D_REENTRANT $(DEFINES)
-CXXFLAGS      = -pipe -O2 -fPIC -Wall -W -D_REENTRANT $(DEFINES)
+CFLAGS        = -std=c11 -pipe -O2 -fPIC -Wall -W -D_REENTRANT $(DEFINES)
+CXXFLAGS      = -std=c++11 -pipe -O2 -fPIC -Wall -W -D_REENTRANT $(DEFINES)
 INCPATH       = -I. -I $(DEPSDIR)/include -I $(DEPSDIR)/include/QtWidgets -I $(DEPSDIR)/include/QtGui -I $(DEPSDIR)/include/QtCore -I.moc -isystem /usr/include/libdrm
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
@@ -27,11 +29,13 @@ DEL_DIR       = rmdir
 MOVE          = mv -f
 TAR           = tar -cf
 COMPRESS      = gzip -9f
-AR            = x86_64-linux-gnu-ar cqs
+#AR            = x86_64-linux-gnu-ar cqs
+AR            = ar cqs
 RANLIB        = 
 SED           = sed
-STRIP         = x86_64-linux-gnu-strip
-MOC=$(DEPSDIR)/native/bin/moc
+#STRIP         = x86_64-linux-gnu-strip
+STRIP         = strip
+MOC           = $(DEPSDIR)/native/bin/moc
 
 
 ####### Output directory
@@ -110,8 +114,8 @@ compiler_rcc_clean:
 compiler_moc_predefs_make_all: .moc/moc_predefs.h
 compiler_moc_predefs_clean:
 	-$(DEL_FILE) .moc/moc_predefs.h
-.moc/moc_predefs.h: /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
-	g++ -pipe -O2 -fPIC -Wall -W -dM -E -o .moc/moc_predefs.h /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
+.moc/moc_predefs.h: dummy.cpp
+	g++ -pipe -O2 -fPIC -Wall -W -dM -E -o .moc/moc_predefs.h dummy.cpp
 
 compiler_moc_header_make_all: .moc/moc_quagzipfile.cpp .moc/moc_quaziodevice.cpp .moc/moc_quazipfile.cpp
 compiler_moc_header_clean:
@@ -121,13 +125,13 @@ compiler_moc_header_clean:
 		quagzipfile.h \
 		.moc/moc_predefs.h \
 		$(MOC)
-	$(MOC) $(DEFINES) --include .moc/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/kanchan/tughlaq-master/src/quazip -I/home/kanchan/tughlaq-master/src/quazip -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include quagzipfile.h -o .moc/moc_quagzipfile.cpp
+	$(MOC) $(DEFINES) --include .moc/moc_predefs.h    -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include quagzipfile.h -o .moc/moc_quagzipfile.cpp
 
 .moc/moc_quaziodevice.cpp: quazip_global.h \
 		quaziodevice.h \
 		.moc/moc_predefs.h \
 		$(MOC)
-	$(MOC) $(DEFINES) --include .moc/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/kanchan/tughlaq-master/src/quazip -I/home/kanchan/tughlaq-master/src/quazip -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include quaziodevice.h -o .moc/moc_quaziodevice.cpp
+	$(MOC) $(DEFINES) --include .moc/moc_predefs.h    -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include quaziodevice.h -o .moc/moc_quaziodevice.cpp
 
 .moc/moc_quazipfile.cpp: quazip_global.h \
 		quazip.h \
@@ -139,7 +143,7 @@ compiler_moc_header_clean:
 		quazipfile.h \
 		.moc/moc_predefs.h \
 		$(MOC)
-	$(MOC) $(DEFINES) --include .moc/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/kanchan/tughlaq-master/src/quazip -I/home/kanchan/tughlaq-master/src/quazip -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include quazipfile.h -o .moc/moc_quazipfile.cpp
+	$(MOC) $(DEFINES) --include .moc/moc_predefs.h    -I$(DEPSDIR)/include -I$(DEPSDIR)/include/QtWidgets -I$(DEPSDIR)/include/QtGui -I$(DEPSDIR)/include/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include quazipfile.h -o .moc/moc_quazipfile.cpp
 
 compiler_moc_source_make_all:
 compiler_moc_source_clean:
