@@ -77,7 +77,7 @@ Note: If you just want to install tughlaqd on Gentoo, you can add the Tughlaq
 USE="minizip" emerge -av1 --noreplace boost glib openssl sys-libs/db net-misc/curl sys-libs/zlib
 
 Take the following steps to build (no UPnP support):
- cd ${VERICOIN_DIR}/src
+ cd ${TUGHLAQ_DIR}/src
  make -f makefile.unix USE_UPNP= BDB_INCLUDE_PATH='/usr/include/db4.8'
  strip tughlaqd
 

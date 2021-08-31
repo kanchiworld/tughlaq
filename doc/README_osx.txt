@@ -1,6 +1,6 @@
-Verium 1.0 
+Tughlaq 1.0 
 
-Copyright (c) 2014-2015 Verium Developers
+Copyright (c) 2014-2015 Tughlaq Developers
 Copyright (c) 2013 NovaCoin Developers
 Copyright (c) 2011-2013 PPCoin Developers
 Distributed under the MIT/X11 software license, see the accompanying
@@ -12,7 +12,7 @@ cryptographic software written by Eric Young (eay@cryptsoft.com).
 
 Intro
 -----
-Verium is a free open source project derived from Bitcoin, with
+Tughlaq is a free open source project derived from Bitcoin, with
 the goal of providing a long-term energy-efficient scrypt-based crypto-currency.
 Built on the foundation of Bitcoin, PPCoin and VeriCoin to
 help further advance the field of crypto-currency.
